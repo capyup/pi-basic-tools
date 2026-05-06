@@ -2,14 +2,14 @@
 
 Standalone basic tools for pi.
 
-This package bundles a practical set of editing, file-navigation, fetch, web-reference, and built-in search activation extensions split out from `pi-goodstuff`.
+This package bundles a practical set of editing, file-navigation, fetch, web-reference, and OpenCode-style search extensions split out from `pi-goodstuff`.
 
 ## Included extensions
 
 - `multi-edit`
 - `files`
 - `fetch`
-- `enable-builtin-search` (activates pi's built-in `grep`, `find`, and `ls` tools)
+- `search` (OpenCode-style `glob` and `grep` tools backed by ripgrep)
 - `basic-tools` (question, todo)
 - `answer`
 - `sourcegraph`
@@ -34,9 +34,14 @@ Use `/basic-tools-settings` to toggle these tools without editing package files:
 
 Settings are stored in `~/.pi/agent/basic-tools-settings.json`. Startup/reload applies the settings, while explicit no-tools sessions are respected.
 
-### Built-in search activation
+### OpenCode-style search
 
-`enable-builtin-search` activates pi's internal `grep`, `find`, and `ls` tools. Legacy custom `glob`, `grep`, and `list` implementations were removed so they cannot shadow pi's built-ins.
+`search` registers local `glob` and `grep` tools with OpenCode-compatible parameters and result formatting. It does not activate pi's built-in `grep`, `find`, or `ls` tools.
+
+- `glob(pattern, path?)`: finds files by glob pattern and returns matching absolute paths sorted by modification time.
+- `grep(pattern, path?, include?)`: searches file contents with regular expressions and returns file paths plus line numbers sorted by modification time.
+
+Both tools use `rg --no-config`, search hidden files, exclude `.git`, and otherwise follow ripgrep's normal ignore behavior.
 
 ## Runtime requirements and dependencies
 
@@ -44,10 +49,10 @@ Settings are stored in `~/.pi/agent/basic-tools-settings.json`. Startup/reload a
 
 `multi-edit` vendors the line-diff implementation from `diff@8.0.2` under `vendor/diff/`, so it does not require `node_modules` or a post-`pi update` `npm install` step.
 
-### External tools you must provide
+### External tools and runtime commands
 
 - `fetch` requires [MarkItDown](https://github.com/microsoft/markitdown) for Markdown conversion.
-- Activated built-in `grep` and `find` use pi's managed `rg` and `fd` tools; install them on `PATH` or let pi download them when needed.
+- The `glob` and `grep` tools use ripgrep. They first use configured or system `rg`, then common OpenCode `rg` locations, and finally download ripgrep into the pi agent directory when needed.
 - MarkItDown upstream requires Python 3.10 or newer.
 - Recommended installation method: `pipx`, so the `markitdown` CLI is available on `PATH` without modifying the package itself.
 
@@ -89,6 +94,16 @@ If pi is already running, reload extensions after installing or updating depende
 ```text
 /reload
 ```
+
+## Testing
+
+Run the repository checks with:
+
+```bash
+npm test
+```
+
+The test suite validates the package search-extension registration and the ripgrep argument behavior used by `glob` and `grep`.
 
 ## Update
 
@@ -167,7 +182,7 @@ Browser automation, heavy web research, and semantic language-server workflows m
 
 - `fetch` keeps a 5 MB response-size guard.
 - `fetch` saves binary responses safely; it does not force them through text decoding before writing them to disk.
-- Legacy custom `glob`, `grep`, and `list` implementations are intentionally absent; pi's built-in `grep`, `find`, and `ls` are preferred.
+- Search now follows the OpenCode model: local `glob` and `grep` tools are registered by this package, while pi's built-in `find`, `ls`, and `grep` are not activated by this package.
 
 ## License
 

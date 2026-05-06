@@ -1,7 +1,7 @@
 {
   "name": "pi-basic-tools",
   "version": "0.1.0",
-  "description": "Standalone core productivity tools for pi: multi-edit, question, todo, files, fetch, answer, Sourcegraph, and built-in search activation.",
+  "description": "Standalone core productivity tools for pi: multi-edit, question, todo, files, fetch, answer, Sourcegraph, and OpenCode-style search.",
   "repository": {
     "type": "git",
     "url": "https://github.com/lulucatdev/pi-basic-tools.git"
@@ -14,12 +14,15 @@
     "editing",
     "search"
   ],
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
   "pi": {
     "extensions": [
       "./extensions/multi-edit.ts",
       "./extensions/files.ts",
       "./extensions/fetch.ts",
-      "./extensions/enable-builtin-search.ts",
+      "./extensions/search.ts",
       "./extensions/basic-tools.ts",
       "./extensions/answer.ts",
       "./extensions/sourcegraph.ts"
