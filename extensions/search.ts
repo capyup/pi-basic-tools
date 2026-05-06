@@ -15,7 +15,6 @@ import {
 const DEFAULT_BUILTINS = new Set(["read", "bash", "edit", "write"]);
 const SEARCH_TOOLS = ["grep", "glob"] as const;
 const REMOVED_BUILTIN_SEARCH_TOOLS = new Set(["find", "ls"]);
-const GIT_EXCLUDE_GLOBS = ["--glob=!.git/**", "--glob=!**/.git/**"];
 const LIMIT = 100;
 const MAX_CAPTURED_MATCHES = 10_000;
 const MAX_LINE_LENGTH = 2000;
@@ -72,6 +71,15 @@ function resolveSearchPath(cwd: string, inputPath?: string): string {
   return path.resolve(cwd, inputPath || ".");
 }
 
+function targetsDotPath(inputPath?: string): boolean {
+  if (!inputPath) return false;
+  return inputPath
+    .replaceAll("\\", "/")
+    .split("/")
+    .filter((part) => part && part !== "." && part !== "..")
+    .some((part) => part.startsWith("."));
+}
+
 function resultText(result: unknown): string | undefined {
   const candidate = result as { content?: Array<{ type?: string; text?: string }> };
   return candidate.content?.find((entry) => entry.type === "text")?.text;
@@ -89,9 +97,11 @@ function grepSummary(result: unknown): string {
   return resultText(result)?.split("\n").find(Boolean) ?? "Done";
 }
 
-async function collectGlobFiles(searchPath: string, pattern: string, signal?: AbortSignal) {
+async function collectGlobFiles(searchPath: string, pattern: string, includeHidden: boolean, signal?: AbortSignal) {
   const rgPath = await resolveRipgrepPath();
-  const args = ["--no-config", "--files", "--hidden", `--glob=${pattern}`, ...GIT_EXCLUDE_GLOBS, "."];
+  const args = ["--no-config", "--files"];
+  if (includeHidden) args.push("--hidden");
+  args.push(`--glob=${pattern}`, ".");
 
   return new Promise<{ files: string[]; truncated: boolean }>((resolve, reject) => {
     const child = spawn(rgPath, args, {
@@ -159,13 +169,15 @@ async function collectGrepMatches(
   cwd: string,
   pattern: string,
   include: string | undefined,
+  includeHidden: boolean,
   files: string[] | undefined,
   signal?: AbortSignal,
 ) {
   const rgPath = await resolveRipgrepPath();
-  const args = ["--no-config", "--json", "--hidden", "--no-messages"];
+  const args = ["--no-config", "--json"];
+  if (includeHidden) args.push("--hidden");
+  args.push("--no-messages");
   if (include) args.push(`--glob=${include}`);
-  args.push(...GIT_EXCLUDE_GLOBS);
   args.push("--", pattern, ...(files ?? ["."]));
 
   return new Promise<{ matches: Omit<MatchRecord, "mtime">[]; partial: boolean; capped: boolean }>((resolve, reject) => {
@@ -272,6 +284,7 @@ function registerGlob(pi: ExtensionAPI): void {
       "Use this tool when you need to find files by name patterns.",
       "Supports glob patterns like '**/*.js' or 'src/**/*.ts'.",
       "Returns matching file paths sorted by modification time.",
+      "By default, dot files and dot directories are skipped. To search one, set path to that dot file or dot directory explicitly.",
       "When you are doing an open-ended search that may require multiple rounds of globbing and grepping, prefer the task tool instead.",
     ],
     parameters: globSchema,
@@ -281,7 +294,7 @@ function registerGlob(pi: ExtensionAPI): void {
       if (kind === "file") throw new Error(`glob path must be a directory: ${searchPath}`);
       await assertDirectory(searchPath);
 
-      const { files, truncated } = await collectGlobFiles(searchPath, params.pattern, signal);
+      const { files, truncated } = await collectGlobFiles(searchPath, params.pattern, targetsDotPath(params.path), signal);
       const rows = await Promise.all(
         files.map(async (relativePath) => {
           const fullPath = path.resolve(searchPath, relativePath);
@@ -327,6 +340,7 @@ function registerGrep(pi: ExtensionAPI): void {
       "Use this tool when you need to find files containing specific patterns.",
       "Use the include parameter to filter files by pattern, for example '*.js' or '*.{ts,tsx}'.",
       "Returns file paths and line numbers sorted by modification time.",
+      "By default, dot files and dot directories are skipped. To search one, set path to that dot file or dot directory explicitly.",
       "If you need to identify or count every match within files, use bash with rg directly instead of this tool.",
       "When you are doing an open-ended search that may require multiple rounds of globbing and grepping, prefer the task tool instead.",
     ],
@@ -344,6 +358,7 @@ function registerGrep(pi: ExtensionAPI): void {
         cwd,
         params.pattern,
         params.include,
+        targetsDotPath(params.path),
         files,
         signal,
       );

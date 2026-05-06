@@ -79,7 +79,7 @@ test("search extension exposes glob and grep without activating builtin find or 
   assert.doesNotMatch(source, /SEARCH_BUILTINS\s*=\s*\["grep", "find", "ls"\]/);
 });
 
-test("OpenCode-style glob arguments include hidden files, exclude .git, and ignore ripgrep config", async (t) => {
+test("glob defaults skip dot paths while ignoring ripgrep config", async (t) => {
   const rg = await resolveRg();
   if (!rg) {
     t.skip("ripgrep is not installed");
@@ -90,7 +90,7 @@ test("OpenCode-style glob arguments include hidden files, exclude .git, and igno
   try {
     const result = await run(
       rg,
-      ["--no-config", "--files", "--hidden", "--glob=**/*.ts", "--glob=!.git/**", "--glob=!**/.git/**", "."],
+      ["--no-config", "--files", "--glob=**/*.ts", "."],
       { cwd: root, env: { ...process.env, RIPGREP_CONFIG_PATH: path.join(root, ".ripgreprc") } },
     );
 
@@ -102,7 +102,7 @@ test("OpenCode-style glob arguments include hidden files, exclude .git, and igno
       .map(normalizeOutputPath);
 
     assert.ok(files.includes("src/newer.ts"));
-    assert.ok(files.includes(".hidden/secret.ts"));
+    assert.ok(!files.includes(".hidden/secret.ts"));
     assert.ok(!files.includes("src/app.js"));
     assert.ok(!files.includes(".git/config.ts"));
   } finally {
@@ -110,7 +110,35 @@ test("OpenCode-style glob arguments include hidden files, exclude .git, and igno
   }
 });
 
-test("OpenCode-style grep arguments return JSON matches and honor include filtering", async (t) => {
+test("glob searches dot paths when the dot directory is the explicit target", async (t) => {
+  const rg = await resolveRg();
+  if (!rg) {
+    t.skip("ripgrep is not installed");
+    return;
+  }
+
+  const root = await createFixture();
+  try {
+    const result = await run(
+      rg,
+      ["--no-config", "--files", "--hidden", "--glob=**/*.ts", "."],
+      { cwd: path.join(root, ".hidden"), env: { ...process.env, RIPGREP_CONFIG_PATH: path.join(root, ".ripgreprc") } },
+    );
+
+    assert.equal(result.code, 0, result.stderr);
+    const files = result.stdout
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map(normalizeOutputPath);
+
+    assert.deepEqual(files, ["secret.ts"]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("grep defaults skip dot paths and honors include filtering", async (t) => {
   const rg = await resolveRg();
   if (!rg) {
     t.skip("ripgrep is not installed");
@@ -124,11 +152,8 @@ test("OpenCode-style grep arguments return JSON matches and honor include filter
       [
         "--no-config",
         "--json",
-        "--hidden",
         "--no-messages",
         "--glob=**/*.ts",
-        "--glob=!.git/**",
-        "--glob=!**/.git/**",
         "--",
         "target",
         ".",
@@ -151,10 +176,39 @@ test("OpenCode-style grep arguments return JSON matches and honor include filter
 
     const paths = matches.map((match) => match.path);
     assert.ok(paths.includes("src/newer.ts"));
-    assert.ok(paths.includes(".hidden/secret.ts"));
+    assert.ok(!paths.includes(".hidden/secret.ts"));
     assert.ok(!paths.includes("src/app.js"));
     assert.ok(!paths.includes(".git/config.ts"));
     assert.ok(matches.every((match) => match.line === 1));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("grep searches dot paths when the dot file or directory is the explicit target", async (t) => {
+  const rg = await resolveRg();
+  if (!rg) {
+    t.skip("ripgrep is not installed");
+    return;
+  }
+
+  const root = await createFixture();
+  try {
+    const directoryResult = await run(
+      rg,
+      ["--no-config", "--json", "--hidden", "--no-messages", "--glob=**/*.ts", "--", "target", "."],
+      { cwd: path.join(root, ".hidden"), env: { ...process.env, RIPGREP_CONFIG_PATH: path.join(root, ".ripgreprc") } },
+    );
+    assert.equal(directoryResult.code, 0, directoryResult.stderr);
+    assert.ok(directoryResult.stdout.includes("target-hidden"));
+
+    const fileResult = await run(
+      rg,
+      ["--no-config", "--json", "--hidden", "--no-messages", "--", "target", ".hidden/secret.ts"],
+      { cwd: root, env: { ...process.env, RIPGREP_CONFIG_PATH: path.join(root, ".ripgreprc") } },
+    );
+    assert.equal(fileResult.code, 0, fileResult.stderr);
+    assert.ok(fileResult.stdout.includes("target-hidden"));
   } finally {
     await rm(root, { recursive: true, force: true });
   }
