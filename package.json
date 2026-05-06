@@ -1,7 +1,7 @@
 {
   "name": "pi-basic-tools",
   "version": "0.1.0",
-  "description": "Standalone core productivity tools for pi: multi-edit, question, todo, files, webfetch, answer, Sourcegraph, and OpenCode-style search.",
+  "description": "Standalone core productivity tools for pi: multi-edit, question, todo, pets, files, webfetch, answer, Sourcegraph, and OpenCode-style search.",
   "repository": {
     "type": "git",
     "url": "https://github.com/lulucatdev/pi-basic-tools.git"
@@ -12,6 +12,7 @@
     "pi-package",
     "pi-extension",
     "editing",
+    "pets",
     "search"
   ],
   "scripts": {
@@ -49,6 +50,7 @@
     }
   },
   "dependencies": {
+    "sharp": "^0.34.5",
     "turndown": "^7.2.4"
   }
 }

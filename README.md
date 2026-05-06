@@ -10,7 +10,7 @@ This package bundles a practical set of editing, file-navigation, web-fetching, 
 - `files`
 - `webfetch`
 - `search` (OpenCode-style `glob` and `grep` tools backed by ripgrep)
-- `basic-tools` (question, todo)
+- `basic-tools` (question, todo, pets)
 - `answer`
 - `sourcegraph`
 
@@ -20,6 +20,21 @@ This package bundles a practical set of editing, file-navigation, web-fetching, 
 
 - `question`: ask the user a focused question with optional choices and free-text fallback.
 - `todo`: maintain a lightweight per-session task list for short multi-step work. It is intentionally not a replacement for plan documents or Ralph loops.
+
+### Codex pets
+
+`basic-tools` adds a `/pets` command for local Codex custom pets stored in `${CODEX_HOME:-~/.codex}/pets`.
+
+```text
+/pets help          # show setup and usage help
+/pets list          # list local custom pets and readiness diagnostics
+/pets wake          # render the selected pet, or the first ready pet, in the footer
+/pets wake <slug>   # render a specific ready pet
+/pets select <slug> # select a ready pet without showing it yet
+/pets tuck          # hide the footer pet
+```
+
+Pet selection is stored in `~/.pi/agent/basic-tools-pets.json`. A ready pet folder needs `pet.json` and `spritesheet.webp`; compatible pets can also be managed by Codex's own `Settings > Appearance > Pets` or `/pet` overlay.
 
 ### Tool toggles
 
@@ -52,6 +67,7 @@ Both tools use `rg --no-config` and otherwise follow ripgrep's normal ignore beh
 ### Runtime dependencies
 
 - `webfetch` uses the package dependency `turndown` for HTML-to-Markdown conversion.
+- `/pets` uses `sharp` to slice compatible Codex pet spritesheets into terminal-renderable animation frames.
 - The `glob` and `grep` tools use ripgrep. They first use configured or system `rg`, then common OpenCode `rg` locations, and finally download ripgrep into the pi agent directory when needed.
 
 ## Installation
@@ -77,6 +93,8 @@ npm test
 ```
 
 The test suite validates the package search-extension registration and the ripgrep argument behavior used by `glob` and `grep`.
+
+It also covers the Codex pet discovery, selection, diagnostics, and completion helpers used by `/pets`.
 
 ## Update
 
@@ -107,6 +125,12 @@ Good candidates for later `pi-basic-tools` additions:
 - Context utilities: inspect active tools, model context usage, and recent large tool outputs.
 
 Browser automation, heavy web research, and semantic language-server workflows may be better as separate packages or MCP integrations instead of bloating this core package.
+
+## Contributing and credits
+
+Contributions are welcome. Keep new tools small, dependency-light when possible, covered by focused tests, and consistent with pi's extension APIs.
+
+The `/pets` command and Codex pet helpers were adapted from Matt Leong's MIT-licensed [`pi-better-openai`](https://github.com/mattleong/pi-better-openai) (Copyright (c) 2026). Please credit upstream work when porting features from other pi extensions.
 
 ## Notes
 
