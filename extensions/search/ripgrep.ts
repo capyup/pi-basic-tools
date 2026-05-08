@@ -3,7 +3,7 @@ import { access, chmod, copyFile, mkdir, mkdtemp, rm, stat, writeFile } from "no
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { getAgentDir } from "@mariozechner/pi-coding-agent";
+import { getAgentDir } from "@earendil-works/pi-coding-agent";
 
 const OUTPUT_LIMIT_BYTES = 1024 * 1024;
 const RIPGREP_VERSION = "15.1.0";

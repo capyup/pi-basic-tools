@@ -69,6 +69,7 @@ test("package registers the OpenCode-style search extension", async () => {
   const packageJson = JSON.parse(await readFile(path.join(repoRoot, "package.json"), "utf8"));
   assert.ok(packageJson.pi.extensions.includes("./extensions/search.ts"));
   assert.ok(!packageJson.pi.extensions.includes("./extensions/enable-builtin-search.ts"));
+  assert.ok(!packageJson.pi.extensions.includes("./extensions/multi-edit.ts"));
 });
 
 test("search extension exposes glob and grep without activating builtin find or ls", async () => {

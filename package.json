@@ -1,7 +1,7 @@
 {
   "name": "pi-basic-tools",
   "version": "0.1.0",
-  "description": "Standalone core productivity tools for pi: multi-edit, question, todo, files, webfetch, answer, Sourcegraph, and OpenCode-style search.",
+  "description": "Standalone core productivity tools for pi: question, todo, files, webfetch, answer, Sourcegraph, and OpenCode-style search.",
   "repository": {
     "type": "git",
     "url": "https://github.com/lulucatdev/pi-basic-tools.git"
@@ -19,7 +19,6 @@
   },
   "pi": {
     "extensions": [
-      "./extensions/multi-edit.ts",
       "./extensions/files.ts",
       "./extensions/webfetch.ts",
       "./extensions/search.ts",
@@ -29,19 +28,19 @@
     ]
   },
   "peerDependencies": {
-    "@mariozechner/pi-ai": "*",
-    "@mariozechner/pi-coding-agent": "*",
-    "@mariozechner/pi-tui": "*",
+    "@earendil-works/pi-ai": "^0.74.0",
+    "@earendil-works/pi-coding-agent": "^0.74.0",
+    "@earendil-works/pi-tui": "^0.74.0",
     "@sinclair/typebox": "*"
   },
   "peerDependenciesMeta": {
-    "@mariozechner/pi-ai": {
+    "@earendil-works/pi-ai": {
       "optional": true
     },
-    "@mariozechner/pi-coding-agent": {
+    "@earendil-works/pi-coding-agent": {
       "optional": true
     },
-    "@mariozechner/pi-tui": {
+    "@earendil-works/pi-tui": {
       "optional": true
     },
     "@sinclair/typebox": {

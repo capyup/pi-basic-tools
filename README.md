@@ -2,11 +2,10 @@
 
 Standalone basic tools for pi.
 
-This package bundles a practical set of editing, file-navigation, web-fetching, web-reference, and OpenCode-style search extensions split out from `pi-goodstuff`.
+This package bundles a practical set of file-navigation, web-fetching, web-reference, and OpenCode-style search extensions split out from `pi-goodstuff`.
 
 ## Included extensions
 
-- `multi-edit`
 - `files`
 - `webfetch`
 - `search` (OpenCode-style `glob` and `grep` tools backed by ripgrep)
@@ -44,10 +43,6 @@ Settings are stored in `~/.pi/agent/basic-tools-settings.json`. Startup/reload a
 Both tools use `rg --no-config` and otherwise follow ripgrep's normal ignore behavior. By default, dot files and dot directories such as `.pi`, `.claude`, and `.git` are skipped. To search a dot file or dot directory, pass that path explicitly as the `path` target.
 
 ## Runtime requirements and dependencies
-
-### Bundled in this package
-
-`multi-edit` vendors the line-diff implementation from `diff@8.0.2` under `vendor/diff/`, so it does not require `node_modules` or a post-`pi update` `npm install` step.
 
 ### Runtime dependencies
 

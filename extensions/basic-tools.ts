@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerQuestionTool } from "./basic-tools/question.ts";
 import { applyToolSettings, registerBasicToolsSettingsCommand } from "./basic-tools/settings.ts";
 import { registerTodoTool } from "./basic-tools/todo.ts";
