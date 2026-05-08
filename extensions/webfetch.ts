@@ -7,7 +7,6 @@
 
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "@sinclair/typebox";
-import TurndownService from "turndown";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
@@ -86,15 +85,41 @@ function isImageAttachmentMime(mime: string): boolean {
 }
 
 function convertHTMLToMarkdown(html: string): string {
-  const turndownService = new TurndownService({
-    headingStyle: "atx",
-    hr: "---",
-    bulletListMarker: "-",
-    codeBlockStyle: "fenced",
-    emDelimiter: "*",
-  });
-  turndownService.remove(["script", "style", "meta", "link"]);
-  return turndownService.turndown(html);
+  let markdown = html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, "")
+    .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(h[1-6])\b[^>]*>([\s\S]*?)<\/\1>/gi, (_match, tag: string, body: string) => {
+      const level = Number.parseInt(tag.slice(1), 10);
+      return `\n\n${"#".repeat(level)} ${stripHtml(body)}\n\n`;
+    })
+    .replace(/<pre\b[^>]*>([\s\S]*?)<\/pre>/gi, (_match, body: string) => `\n\n\`\`\`\n${stripHtml(body).trim()}\n\`\`\`\n\n`)
+    .replace(/<code\b[^>]*>([\s\S]*?)<\/code>/gi, (_match, body: string) => `\`${stripHtml(body).trim()}\``)
+    .replace(/<a\b[^>]*href=["']?([^"'\s>]+)["']?[^>]*>([\s\S]*?)<\/a>/gi, (_match, href: string, body: string) => {
+      const label = stripHtml(body).trim();
+      return label ? `[${label}](${href})` : href;
+    })
+    .replace(/<img\b[^>]*alt=["']?([^"'>]*)["']?[^>]*src=["']?([^"'\s>]+)["']?[^>]*>/gi, (_match, alt: string, src: string) =>
+      alt ? `![${decodeHtmlEntities(alt)}](${src})` : "",
+    )
+    .replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_match, _tag: string, body: string) => `**${stripHtml(body).trim()}**`)
+    .replace(/<(em|i)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_match, _tag: string, body: string) => `*${stripHtml(body).trim()}*`)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<li\b[^>]*>/gi, "\n- ")
+    .replace(/<\/(p|div|section|article|header|footer|blockquote|ul|ol|table|tr)>/gi, "\n\n")
+    .replace(/<\/(li|td|th)>/gi, "\n")
+    .replace(/<hr\s*\/?>/gi, "\n\n---\n\n")
+    .replace(/<[^>]+>/g, "");
+
+  markdown = decodeHtmlEntities(markdown)
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{4,}/g, "\n\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+
+  return markdown;
 }
 
 function decodeHtmlEntities(text: string): string {
@@ -128,6 +153,10 @@ function extractTextFromHTML(html: string): string {
       .replace(/\n{3,}/g, "\n\n")
       .trim(),
   );
+}
+
+function stripHtml(html: string): string {
+  return decodeHtmlEntities(html.replace(/<[^>]+>/g, ""));
 }
 
 function responseTitle(url: string, contentType: string): string {

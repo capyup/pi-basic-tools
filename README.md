@@ -46,7 +46,6 @@ Both tools use `rg --no-config` and otherwise follow ripgrep's normal ignore beh
 
 ### Runtime dependencies
 
-- `webfetch` uses the package dependency `turndown` for HTML-to-Markdown conversion.
 - The `glob` and `grep` tools use ripgrep. They first use configured or system `rg`, then common OpenCode `rg` locations, and finally download ripgrep into the pi agent directory when needed.
 
 ## Installation
@@ -85,7 +84,7 @@ pi update git:github.com/lulucatdev/pi-basic-tools
 
 `webfetch` follows OpenCode's model: it is a read-only retrieval tool that returns fetched content directly to the model instead of creating `.pi/fetch` artifacts in the workspace.
 
-- `format: "markdown"` is the default. HTML responses are converted to Markdown with `turndown`; non-HTML text is returned as-is.
+- `format: "markdown"` is the default. HTML responses are converted to lightweight Markdown; non-HTML text is returned as-is.
 - `format: "text"` extracts readable text from HTML and returns non-HTML text as-is.
 - `format: "html"` returns the response body as HTML or raw text.
 - Image responses are returned as inline image content for the model.

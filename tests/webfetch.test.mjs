@@ -10,14 +10,14 @@ test("package registers OpenCode-style webfetch instead of fetch", async () => {
   const packageJson = JSON.parse(await readFile(path.join(repoRoot, "package.json"), "utf8"));
   assert.ok(packageJson.pi.extensions.includes("./extensions/webfetch.ts"));
   assert.ok(!packageJson.pi.extensions.includes("./extensions/fetch.ts"));
-  assert.equal(packageJson.dependencies.turndown, "^7.2.4");
+  assert.ok(!packageJson.dependencies?.turndown);
 });
 
 test("webfetch returns content directly and does not write fetch artifacts", async () => {
   const source = await readFile(path.join(repoRoot, "extensions", "webfetch.ts"), "utf8");
 
   assert.match(source, /name:\s*"webfetch"/);
-  assert.match(source, /new TurndownService/);
+  assert.doesNotMatch(source, /from "turndown"|TurndownService/);
   assert.match(source, /type:\s*"image"/);
   assert.doesNotMatch(source, /writeFile|mkdir|markitdown|\.pi\/fetch|meta\.json|content\.md|response\.<ext>/i);
 });

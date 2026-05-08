@@ -46,8 +46,5 @@
     "@sinclair/typebox": {
       "optional": true
     }
-  },
-  "dependencies": {
-    "turndown": "^7.2.4"
   }
 }
