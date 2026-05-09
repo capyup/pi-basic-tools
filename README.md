@@ -10,7 +10,7 @@ This package bundles a practical set of editing, file-navigation, fetch, web-ref
 - `files`
 - `fetch`
 - `enable-builtin-search` (activates pi's built-in `grep`, `find`, and `ls` tools)
-- `basic-tools` (question, todo)
+- `basic-tools` (question)
 - `answer`
 - `sourcegraph`
 
@@ -19,7 +19,8 @@ This package bundles a practical set of editing, file-navigation, fetch, web-ref
 `basic-tools` adds small, session-friendly tools that make common agent workflows safer:
 
 - `question`: ask the user a focused question with optional choices and free-text fallback.
-- `todo`: maintain a lightweight per-session task list for short multi-step work. It is intentionally not a replacement for plan documents or Ralph loops.
+
+> Looking for task tracking? `todo` is no longer shipped here. Install [`@tintinweb/pi-tasks`](https://github.com/tintinweb/pi-tasks) for `TaskCreate`/`TaskList`/`TaskUpdate` and friends.
 
 ### Tool toggles
 
@@ -28,7 +29,7 @@ Use `/basic-tools-settings` to toggle these tools without editing package files:
 ```text
 /basic-tools-settings
 /basic-tools-settings list
-/basic-tools-settings enable todo
+/basic-tools-settings enable question
 /basic-tools-settings disable all
 ```
 
