@@ -49,7 +49,6 @@ Reference: https://github.com/earendil-works/pi/blob/main/packages/coding-agent/
 | Area | Tests | Real dependencies exercised |
 | --- | --- | --- |
 | Package wiring | `tests/package-wiring.test.ts` | package manifest, extension files, npm lockfile contents |
-| `apply_patch` | `tests/apply-patch.test.ts` | real temp filesystem writes, deletes, moves, preflight failure behavior |
 | `repo_map` | `tests/repo-map-read-block.test.ts` | real `git init`, `git add`, manifest parsing, filesystem walking |
 | `read_block` | `tests/repo-map-read-block.test.ts` | real file reads, TypeScript brace blocks, Markdown sections, invalid inputs |
 | `question` | `tests/ui-tools.test.ts` | extension UI dialog contract for select/input/cancel results |
@@ -63,10 +62,6 @@ The tests use a small in-process extension host to register and execute pi tools
 ## Research Summary
 
 Public agent-testing guidance consistently recommends layered testing: deterministic component/tool tests first, integration tests for workflows, and production/evaluation feedback loops for LLM behavior. For this package, the right default is tool-level and integration-style checks because the extensions are deterministic tools; exact code assertions are cheaper and more stable than LLM-as-judge evaluation. Source: https://blog.appxlab.io/2026/04/08/how-to-test-ai-agents/
-
-OpenAI Codex's apply-patch suite copies fixture inputs into a temporary directory, runs the real apply-patch binary, and asserts exact final filesystem state. That pattern maps directly to this package's `apply_patch` tests. Source: https://github.com/openai/codex/blob/9a8730f3/codex-rs/apply-patch/tests/suite/scenarios.rs
-
-The opencode/Kilo apply-patch tests cover successful add/update/delete/move operations and negative cases such as missing targets, invalid hunks, no-side-effect verification failures, heredoc parsing, and add-file overwrite behavior. Those cases informed the regression tests that exposed and fixed this package's heredoc and add-overwrite bugs. Source: https://github.com/Kilo-Org/kilocode/blob/cb0c58c0/packages/opencode/test/tool/apply_patch.test.ts
 
 For JavaScript/TypeScript projects, current runners such as Vitest document the standard pattern of committed test files plus a package script that runs the suite once in CI/local checks. This project uses Bun's built-in runner instead of adding Vitest because Bun is already available locally and runs TypeScript ESM tests directly. Reference: https://main.vitest.dev/guide/
 

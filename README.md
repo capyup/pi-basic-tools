@@ -6,7 +6,6 @@ This package bundles a practical set of editing, fetch, web-reference, and built
 
 ## Included extensions
 
-- `apply-patch` (`apply_patch` tool)
 - `fetch`
 - `enable-builtin-search` (activates pi's built-in `grep`, `find`, and `ls` tools)
 - `repo-map` (`repo_map` tool)
@@ -38,8 +37,6 @@ This package bundles a practical set of editing, fetch, web-reference, and built
 Pi core packages have moved from `@mariozechner/*` to `@earendil-works/*`. This package imports and tests against the new scope (`@earendil-works/pi-ai`, `@earendil-works/pi-coding-agent`, and `@earendil-works/pi-tui`) and keeps them as peer dependencies so pi supplies its own core runtime.
 
 ### Bundled in this package
-
-`apply-patch` vendors the line-diff implementation from `diff@8.0.2` under `vendor/diff/`, so it does not require `node_modules` or a post-`pi update` `npm install` step.
 
 ### External tools you must provide
 
@@ -98,7 +95,7 @@ npm run test:build
 npm run check
 ```
 
-Test coverage includes `apply_patch`, `repo_map`, `read_block`, `question`, `questionnaire`, `fetch`, `sourcegraph`, `enable-builtin-search`, and package wiring. See [`docs/testing.md`](docs/testing.md) for the dependency checklist, public research summary, and recommended pi extension testing workflow.
+Test coverage includes `repo_map`, `read_block`, `question`, `questionnaire`, `fetch`, `sourcegraph`, `enable-builtin-search`, and package wiring. See [`docs/testing.md`](docs/testing.md) for the dependency checklist, public research summary, and recommended pi extension testing workflow.
 
 ## Update
 

@@ -14,7 +14,6 @@ describe("package wiring", () => {
   test("registers only the current pi-basic-tools extensions", async () => {
     const pkg = await readJson(packageJsonPath);
     expect(pkg.pi.extensions).toEqual([
-      "./extensions/apply-patch.ts",
       "./extensions/fetch.ts",
       "./extensions/enable-builtin-search.ts",
       "./extensions/repo-map.ts",
