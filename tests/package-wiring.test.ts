@@ -18,6 +18,7 @@ describe("package wiring", () => {
       "./extensions/enable-builtin-search.ts",
       "./extensions/repo-map.ts",
       "./extensions/read-block.ts",
+      "./extensions/symbol-outline.ts",
       "./extensions/question.ts",
       "./extensions/questionnaire.ts",
       "./extensions/sourcegraph.ts",

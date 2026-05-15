@@ -1,4 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { keyHint } from "@earendil-works/pi-coding-agent";
+import { Container, Text } from "@earendil-works/pi-tui";
 import { Type } from "@sinclair/typebox";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
@@ -101,6 +103,36 @@ type FileInfo = {
 function clamp(value: number | undefined, fallback: number, min: number, max: number): number {
   if (!Number.isFinite(value ?? NaN)) return fallback;
   return Math.max(min, Math.min(max, Math.floor(value!)));
+}
+
+function safeKeyHint(keybinding: string, description: string): string {
+  try {
+    return keyHint(keybinding, description);
+  } catch {
+    return `(${description})`;
+  }
+}
+
+function fallbackText(result: any): string {
+  const content = result.content?.[0];
+  return content?.type === "text" ? content.text : "";
+}
+
+function renderRepoMapResult(result: any, { expanded, isPartial }: { expanded?: boolean; isPartial?: boolean }, theme: any) {
+  if (isPartial) return new Text(theme.fg("warning", "Mapping repository..."), 0, 0);
+
+  const details = result.details as { root?: string; fileCount?: number; git?: GitInfo } | undefined;
+  const fullText = fallbackText(result);
+  if (!details) return new Text(fullText, 0, 0);
+  if (expanded) return new Text(fullText, 0, 0);
+
+  const name = basename(details.root || "repo");
+  const branch = details.git?.branch ? `branch ${details.git.branch}` : "no branch";
+  const dirtyCount = details.git?.status?.length ?? 0;
+  const fileCount = details.fileCount ?? 0;
+  const hint = safeKeyHint("app.tools.expand", "to expand");
+  const summary = `${name} · ${fileCount} files · ${branch}${dirtyCount > 0 ? ` · ${dirtyCount} dirty` : ""}`;
+  return new Text(theme.fg("success", "repo map ") + theme.fg("accent", summary) + theme.fg("muted", ` ${hint}`), 0, 0);
 }
 
 function runGit(cwd: string, args: string[]): string | undefined {
@@ -278,6 +310,10 @@ export default function repoMapExtension(pi: ExtensionAPI): void {
       "Do not use repo_map for exact file contents; use read or read_block after repo_map identifies relevant files.",
     ],
     parameters: repoMapSchema,
+    renderCall() {
+      return new Container();
+    },
+    renderResult: renderRepoMapResult,
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const requested = params.path ? resolve(ctx.cwd, params.path) : ctx.cwd;
       const rootCandidate = findProjectRoot(requested);

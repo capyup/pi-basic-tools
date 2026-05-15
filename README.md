@@ -10,6 +10,7 @@ This package bundles a practical set of editing, fetch, web-reference, and built
 - `enable-builtin-search` (activates pi's built-in `grep`, `find`, and `ls` tools)
 - `repo-map` (`repo_map` tool)
 - `read-block` (`read_block` tool)
+- `symbol-outline` (`symbol_outline` tool)
 - `question`
 - `questionnaire`
 - `sourcegraph`
@@ -19,6 +20,8 @@ This package bundles a practical set of editing, fetch, web-reference, and built
 `repo_map` generates a compact project orientation map: root, git state, manifests, language mix, important files, directory clusters, and recent changes.
 
 `read_block` reads the enclosing code or Markdown block around a line or symbol, so agents can inspect the right semantic unit without guessing offset/limit ranges.
+
+`symbol_outline` lists a file's readable functions, classes, types, declarations, or Markdown sections with `read_block` line anchors, so agents can discover the right block before reading it.
 
 `question` adds a small, session-friendly tool for asking the user a focused question with optional choices and free-text fallback.
 

@@ -51,6 +51,7 @@ Reference: https://github.com/earendil-works/pi/blob/main/packages/coding-agent/
 | Package wiring | `tests/package-wiring.test.ts` | package manifest, extension files, npm lockfile contents |
 | `repo_map` | `tests/repo-map-read-block.test.ts` | real `git init`, `git add`, manifest parsing, filesystem walking |
 | `read_block` | `tests/repo-map-read-block.test.ts` | real file reads, TypeScript brace blocks, Markdown sections, invalid inputs |
+| `symbol_outline` | `tests/repo-map-read-block.test.ts` | TypeScript symbols, default exports, Markdown heading sections, nested declarations, display caps, `read_block` composition |
 | `question` | `tests/ui-tools.test.ts` | extension UI dialog contract for select/input/cancel results |
 | `questionnaire` | `tests/ui-tools.test.ts` | real questionnaire component logic and `@earendil-works/pi-tui` keyboard handling |
 | `fetch` | `tests/network-tools.test.ts` | live HTTP fetch, project-local `.pi/fetch`, real MarkItDown conversion, metadata files |
