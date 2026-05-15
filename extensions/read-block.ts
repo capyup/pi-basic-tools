@@ -9,7 +9,7 @@ const readBlockSchema = Type.Object({
   symbol: Type.Optional(Type.String({ description: "Symbol or markdown heading text to locate when line is not provided" })),
   mode: Type.Optional(Type.String({ description: "Block detection mode: auto, markdown, indentation, or window (default auto)" })),
   context: Type.Optional(Type.Number({ description: "Extra lines before and after the detected block (default 0, max 20)" })),
-  maxLines: Type.Optional(Type.Number({ description: "Maximum lines returned (default 220, max 1000)" })),
+  maxLines: Type.Optional(Type.Number({ description: "Maximum lines returned (default 9, max 1000)" })),
 });
 
 type Mode = "auto" | "markdown" | "indentation" | "window";
@@ -290,7 +290,7 @@ export default function readBlockExtension(pi: ExtensionAPI): void {
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const filePath = resolve(ctx.cwd, params.path);
       const mode = detectMode(filePath, params.mode);
-      const maxLines = clamp(params.maxLines, 220, 20, 1000);
+      const maxLines = clamp(params.maxLines, 9, 1, 1000);
       const context = clamp(params.context, 0, 0, 20);
       const text = normalizeToLF(await readFile(filePath, "utf8"));
       const lines = text.endsWith("\n") ? text.slice(0, -1).split("\n") : text.split("\n");

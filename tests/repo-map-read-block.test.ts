@@ -67,6 +67,29 @@ describe("read_block", () => {
     });
   });
 
+  test("defaults to a nine-line window around the anchor in long blocks", async () => {
+    await withTempDir(async (dir) => {
+      const body = Array.from({ length: 15 }, (_, index) => `  const value${index + 1} = ${index + 1};`);
+      body[7] = "  const target = 8;";
+      await writeFile(join(dir, "long.ts"), ["export function longBlock() {", ...body, "}", ""].join("\n"), "utf8");
+
+      const host = createExtensionHost({ cwd: dir });
+      readBlockExtension(host.api as any);
+      const result = await host.runTool("read_block", { path: "long.ts", symbol: "target" });
+      const text = result.content[0].text;
+
+      expect(text).toContain("Anchor: L9 (declaration 'target')");
+      expect(text).toContain("Truncated: showing L5-L13");
+      expect(text).toContain("L 5:   const value4 = 4;");
+      expect(text).toContain("L 9:   const target = 8;");
+      expect(text).toContain("L13:   const value12 = 12;");
+      expect(text).not.toContain("L 4:   const value3 = 3;");
+      expect(text).not.toContain("L14:   const value13 = 13;");
+      expect(result.details.outputStart).toBe(5);
+      expect(result.details.outputEnd).toBe(13);
+    });
+  });
+
   test("reads a Markdown section by heading", async () => {
     await withTempDir(async (dir) => {
       await writeFile(join(dir, "notes.md"), "# Top\nintro\n\n## Target\nline a\nline b\n\n## Next\nline c\n", "utf8");
