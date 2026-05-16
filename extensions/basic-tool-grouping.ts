@@ -214,8 +214,7 @@ function roleForTool(toolName: string): BasicToolRole {
 
 function statusRole(item: ToolItem): string {
   if (item.status === "error") return "error";
-  if (item.status === "success") return "success";
-  if (item.status === "running") return "warning";
+  if (item.status === "running" || item.status === "pending") return "warning";
   return "muted";
 }
 
@@ -320,7 +319,12 @@ function wrapActionLine(marker: string, headline: string, theme: any, item: Tool
 
 function formatCompactItem(item: ToolItem, theme: any, width: number): string[] {
   const headline = actionHeadline(item);
-  const marker = item.status === "error" ? "!" : "•";
+  // Marker shape encodes state so item text can stay muted in all non-error
+  // cases:  running -> warning ◐ , error -> error ! , done -> muted • .
+  let marker: string;
+  if (item.status === "error") marker = "!";
+  else if (item.status === "running" || item.status === "pending") marker = "◐";
+  else marker = "•";
   return wrapActionLine(marker, headline, theme, item, width);
 }
 

@@ -631,7 +631,7 @@ describe("enable-builtin-search", () => {
     const callLines = component.render(34);
 
     expect(callLines.filter((line) => line.startsWith("  │ ")).length).toBeLessThanOrEqual(4);
-    expect(callLines.every((line) => line.startsWith("• ") || line.startsWith("  │ "))).toBe(true);
+    expect(callLines.every((line) => line.startsWith("• ") || line.startsWith("◐ ") || line.startsWith("  │ "))).toBe(true);
 
     const output = Array.from({ length: 12 }, (_value, index) => `line-${index + 1}`).join("\n");
     renderComponent(bash.renderResult({ content: [{ type: "text", text: output }] }, { expanded: false, isPartial: false }, plainTheme(), context));
