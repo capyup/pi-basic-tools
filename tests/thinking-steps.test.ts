@@ -134,6 +134,22 @@ describe("thinking-steps parse + render", () => {
     expect(lines.some((line) => line.startsWith("  \u2514 "))).toBe(true);
   });
 
+  test("active thinking step uses warning marker + muted text + bold (no accent)", () => {
+    const blocks = makeBlocks("Investigating the renderer right now to find the bug.");
+    const steps = deriveThinkingSteps(blocks);
+    const activeId = steps[0]!.id;
+    const lines = renderThinkingStepsLines(taggingTheme, 200, {
+      mode: "summary",
+      steps,
+      activeStepId: activeId,
+      isActive: true,
+    });
+    const stepRow = lines.find((line) => line.includes("<warning>•</warning>")) ?? "";
+    expect(stepRow).toMatch(/<warning>•<\/warning>/);
+    expect(stepRow).toMatch(/<b><muted>[^<]*<\/muted><\/b>/);
+    expect(stepRow).not.toMatch(/<accent>[^<]+<\/accent>/);
+  });
+
   test("done Thinking summary header uses muted color (not accent)", () => {
     const steps = deriveThinkingSteps(sampleBlocks);
     const lines = renderThinkingStepsLines(taggingTheme, 200, {

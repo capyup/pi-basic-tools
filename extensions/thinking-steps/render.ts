@@ -112,7 +112,9 @@ interface StepStyle {
 
 function stepStyle(step: DerivedThinkingStep, active: boolean): StepStyle {
   if (active) {
-    return { markerColor: "warning", summaryColor: "accent", bold: true };
+    // Tier 1 signal (warning) lives on the marker; summary text stays Tier 3 (muted).
+    // Bold is kept as a weight cue that the line is still being written.
+    return { markerColor: "warning", summaryColor: "muted", bold: true };
   }
   if (step.hasExplicitFailure) {
     return { markerColor: "error", summaryColor: "error", bold: false };
