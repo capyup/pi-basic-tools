@@ -10,6 +10,9 @@ import askUserExtension from "./ask-user.ts";
 import askQuestionExtension from "./ask-question.ts";
 import askQuestionnaireExtension from "./ask-questionnaire.ts";
 import sourcegraphExtension from "./sourcegraph.ts";
+import workCheckpointExtension from "./work-checkpoint.ts";
+import thinkingStepsExtension from "./thinking-steps/index.ts";
+import todoExtension from "./todo/index.ts";
 
 export default function piBasicToolsExtension(pi: ExtensionAPI): void {
   // Load all tools through one entrypoint so shared renderer state is truly shared.
@@ -24,4 +27,7 @@ export default function piBasicToolsExtension(pi: ExtensionAPI): void {
   askQuestionExtension(pi);
   askQuestionnaireExtension(pi);
   sourcegraphExtension(pi);
+  workCheckpointExtension(pi);
+  thinkingStepsExtension(pi);
+  todoExtension(pi);
 }

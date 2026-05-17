@@ -1,7 +1,7 @@
 {
   "name": "@capyup/pi-basic-tools",
-  "version": "0.6.0",
-  "description": "Standalone core productivity tools for pi: repo_map, read_block, symbol_outline, apply_patch, exec_command, write_stdin, grouped basic-tool UI, ask_user, ask_question, ask_questionnaire, fetch, Sourcegraph, and built-in search activation. (todo split out into @tintinweb/pi-tasks.)",
+  "version": "0.8.0",
+  "description": "Standalone core productivity tools for pi: repo_map, read_block, symbol_outline, apply_patch, exec_command, write_stdin, grouped basic-tool UI, work_checkpoint, ask_user, ask_question, ask_questionnaire, fetch, Sourcegraph, and built-in search activation. (todo split out into @tintinweb/pi-tasks.)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/capyup/pi-basic-tools.git"
@@ -29,9 +29,9 @@
   },
   "scripts": {
     "test": "bun test",
-    "test:build": "bun build extensions/index.ts extensions/fetch.ts extensions/enable-builtin-search.ts extensions/repo-map.ts extensions/read-block.ts extensions/symbol-outline.ts extensions/apply-patch.ts extensions/terminal-session.ts extensions/ask-user.ts extensions/ask-question.ts extensions/ask-questionnaire.ts extensions/sourcegraph.ts --target=node --external @earendil-works/pi-coding-agent --external @earendil-works/pi-ai --external @earendil-works/pi-tui --external @sinclair/typebox --outdir /tmp/pi-basic-tools-build",
-    "test:tui-capture": "python3 scripts/capture-pi-tui.py --expect TOOLS --expect symbol_outline --expect read_block --expect grep --expect-tools-block symbol_outline --expect-tools-block read_block --expect-tools-block grep --forbid 'grep grep'",
-    "test:tui-capture:current": "python3 scripts/capture-pi-tui.py --current-pi-settings --expect TOOLS --expect symbol_outline --expect read_block --expect grep --expect-tools-block symbol_outline --expect-tools-block read_block --expect-tools-block grep --forbid 'grep grep'",
+    "test:build": "bun build extensions/index.ts extensions/fetch.ts extensions/enable-builtin-search.ts extensions/repo-map.ts extensions/read-block.ts extensions/symbol-outline.ts extensions/apply-patch.ts extensions/terminal-session.ts extensions/ask-user.ts extensions/ask-question.ts extensions/ask-questionnaire.ts extensions/sourcegraph.ts extensions/work-checkpoint.ts extensions/thinking-steps/index.ts extensions/todo/index.ts --target=node --external @earendil-works/pi-coding-agent --external @earendil-works/pi-ai --external @earendil-works/pi-tui --external @sinclair/typebox --outdir /tmp/pi-basic-tools-build",
+    "test:tui-capture": "python3 scripts/capture-pi-tui.py --expect 'Explored 3 targets' --expect Outline --expect Read --expect Search --expect-tools-block Outline --expect-tools-block Read --expect-tools-block Search --forbid 'grep grep'",
+    "test:tui-capture:current": "python3 scripts/capture-pi-tui.py --current-pi-settings --basic-leak-canary",
     "check": "npm run test:build && npm test"
   },
   "pi": {

@@ -49,15 +49,10 @@ function renderReadBlockResult(result: any, { expanded, isPartial }: { expanded?
   if (isPartial) return new Text(theme.fg("warning", "Reading block..."), 0, 0);
 
   const details = result.details as ReadBlockDetails | undefined;
-  const fullText = fallbackText(result);
-  if (!details) return new Text(fullText, 0, 0);
-  if (expanded) return new Text(fullText, 0, 0);
+  if (!details) return new Text(theme.fg("accent", "Read block"), 0, 0);
 
-  const range = details.truncated
-    ? `${details.displayPath}:${details.outputStart}-${details.outputEnd} of ${details.blockStart}-${details.blockEnd}`
-    : `${details.displayPath}:${details.outputStart}-${details.outputEnd}`;
   const hint = safeKeyHint("app.tools.expand", "to expand");
-  return new Text(theme.fg("success", "read block ") + theme.fg("accent", range) + theme.fg("muted", ` ${hint}`), 0, 0);
+  return new Text(theme.fg("accent", `Read ${details.displayPath}:${details.outputStart}-${details.outputEnd}`) + theme.fg("muted", `\n${hint}`), 0, 0);
 }
 
 export default function readBlockExtension(pi: ExtensionAPI): void {

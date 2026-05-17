@@ -92,12 +92,12 @@ describe("sourcegraph", () => {
       const tool = host.getTool("sourcegraph");
       expect(renderComponent(tool.renderCall({ query: "CODEX_CORE_APPLY_PATCH_ARG1" }, plainTheme(), {}))).toBe("");
       const collapsed = renderComponent(tool.renderResult(result, { expanded: false, isPartial: false }, plainTheme(), {}));
-      expect(collapsed).toContain("sourcegraph ");
-      expect(collapsed).toContain("matches");
+      expect(collapsed).toContain("Search Sourcegraph");
       expect(collapsed).toContain("(to expand)");
       expect(collapsed).not.toContain("CODEX_CORE_APPLY_PATCH_ARG1");
       const expanded = renderComponent(tool.renderResult(result, { expanded: true, isPartial: false }, plainTheme(), {}));
-      expect(expanded).toContain("CODEX_CORE_APPLY_PATCH_ARG1");
+      expect(expanded).not.toContain("CODEX_CORE_APPLY_PATCH_ARG1");
+      expect(result.content[0].text).toContain("CODEX_CORE_APPLY_PATCH_ARG1");
     },
     120_000,
   );

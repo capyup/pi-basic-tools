@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { createBashTool, createEditTool, createFindTool, createGrepTool, createLsTool, createReadTool, createWriteTool, keyHint } from "@earendil-works/pi-coding-agent";
+import { createBashTool, createEditTool, createEditToolDefinition, createFindTool, createGrepTool, createLsTool, createReadTool, createWriteTool, createWriteToolDefinition, keyHint } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { canGroupTool, installBasicToolGrouping, renderGroupedToolCall, renderGroupedToolResult, summarizeToolCall } from "./basic-tool-grouping.ts";
 
@@ -34,21 +34,19 @@ function renderSearchResult(label: string, noun: string, result: any, { expanded
   if (isPartial) return new Text(theme.fg("warning", `${label}...`), 0, 0);
 
   const fullText = fallbackText(result);
-  if (expanded) return new Text(fullText, 0, 0);
-
   const count = countNonEmptyLines(fullText);
   const truncated = result.details?.truncation?.truncated || result.details?.matchLimitReached || result.details?.resultLimitReached || result.details?.entryLimitReached;
   const hint = safeKeyHint("app.tools.expand", "to expand");
-  const summary = count === 0 || /no matches|no files|empty/i.test(fullText) ? `no ${plural(noun, 2)}` : `${count} ${plural(noun, count)}`;
-  return new Text(theme.fg("success", `${label} `) + theme.fg("accent", summary) + theme.fg("dim", `${truncated ? " truncated" : ""} ${hint}`), 0, 0);
+  const summary = count === 0 || /no matches|no files|empty/i.test(fullText) ? `No ${plural(noun, 2)}` : `${label === "grep" ? "Search" : label === "find" ? "Find" : "List"} results`;
+  return new Text(theme.fg("accent", summary) + theme.fg("dim", `${truncated ? "\ntruncated" : ""}\n${hint}`), 0, 0);
 }
 
 function registerCompactBuiltInRenderers(pi: ExtensionAPI) {
   const cwd = process.cwd();
   const read = createReadTool(cwd);
   const bash = createBashTool(cwd);
-  const edit = createEditTool(cwd);
-  const write = createWriteTool(cwd);
+  const edit = createEditToolDefinition(cwd);
+  const write = createWriteToolDefinition(cwd);
   const grep = createGrepTool(cwd);
   const find = createFindTool(cwd);
   const ls = createLsTool(cwd);
@@ -65,7 +63,7 @@ function registerCompactBuiltInRenderers(pi: ExtensionAPI) {
       return renderGroupedToolCall("read", args, theme, context, summarizeToolCall("read", args));
     },
     renderResult(result, options, theme, context) {
-      if (!canGroupTool(context)) return new Text(fallbackText(result), 0, 0);
+      if (!canGroupTool(context)) return new Text(theme.fg("accent", "Read file"), 0, 0);
       return renderGroupedToolResult("read", result, options, theme, context);
     },
     async execute(toolCallId, params, signal, onUpdate, ctx) {
@@ -85,7 +83,7 @@ function registerCompactBuiltInRenderers(pi: ExtensionAPI) {
       return renderGroupedToolCall("bash", args, theme, context, summarizeToolCall("bash", args));
     },
     renderResult(result, options, theme, context) {
-      if (!canGroupTool(context)) return new Text(fallbackText(result), 0, 0);
+      if (!canGroupTool(context)) return new Text(theme.fg(result?.isError ? "error" : "accent", "Ran command"), 0, 0);
       return renderGroupedToolResult("bash", result, options, theme, context);
     },
     async execute(toolCallId, params, signal, onUpdate, ctx) {
@@ -102,11 +100,10 @@ function registerCompactBuiltInRenderers(pi: ExtensionAPI) {
     parameters: edit.parameters,
     renderShell: "self",
     renderCall(args, theme, context) {
-      return renderGroupedToolCall("edit", args, theme, context, summarizeToolCall("edit", args));
+      return edit.renderCall(args, theme, context);
     },
     renderResult(result, options, theme, context) {
-      if (!canGroupTool(context)) return new Text(fallbackText(result), 0, 0);
-      return renderGroupedToolResult("edit", result, options, theme, context);
+      return edit.renderResult(result, options, theme, context);
     },
     async execute(toolCallId, params, signal, onUpdate, ctx) {
       return createEditTool(ctx.cwd).execute(toolCallId, params, signal, onUpdate);
@@ -122,11 +119,10 @@ function registerCompactBuiltInRenderers(pi: ExtensionAPI) {
     parameters: write.parameters,
     renderShell: "self",
     renderCall(args, theme, context) {
-      return renderGroupedToolCall("write", args, theme, context, summarizeToolCall("write", args));
+      return write.renderCall(args, theme, context);
     },
     renderResult(result, options, theme, context) {
-      if (!canGroupTool(context)) return new Text(fallbackText(result), 0, 0);
-      return renderGroupedToolResult("write", result, options, theme, context);
+      return write.renderResult(result, options, theme, context);
     },
     async execute(toolCallId, params, signal, onUpdate, ctx) {
       return createWriteTool(ctx.cwd).execute(toolCallId, params, signal, onUpdate);

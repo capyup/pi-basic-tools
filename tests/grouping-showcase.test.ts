@@ -232,4 +232,42 @@ describe("grouping showcase - harmless combos", () => {
     expect(out).not.toContain("stdin");
     expect(out).toContain("Ran echo hi");
   });
+
+  test("combo J: write tool is not handled by basic-tool grouping", () => {
+    resetBasicToolGroupingForTests();
+    const theme = plainTheme();
+
+    const call = renderGroupedToolCall("write", { path: "notes.md" }, theme, ctx("w1"));
+    renderGroupedToolResult("write", okResult("written", {}), { expanded: false, isPartial: false }, theme, ctx("w1"));
+    const result = renderGroupedToolCall("write", { path: "notes.md" }, theme, ctx("w1", false));
+
+    expect(render(call)).toBe("");
+    expect(render(result)).toBe("");
+  });
+
+  test("combo K: only the latest slot in a group renders — earlier slots stay empty", () => {
+    // Regression for a bug where 9 tool calls in one group produced 4+ duplicated
+    // "Used 9 tools" blocks. The root cause: each call's slot returns a fresh
+    // BasicToolGroupComponent referencing the same shared group, and the older
+    // component slots did not honour item.hidden (only BasicToolItemComponent did).
+    resetBasicToolGroupingForTests();
+    const theme = plainTheme();
+
+    // Simulate ToolExecutionComponent.updateDisplay re-running renderCall on every
+    // refresh — each tool call's slot stores the most recently returned component.
+    const slot1 = renderGroupedToolCall("read", { path: "a.md" }, theme, ctx("c1"));
+    const slot2 = renderGroupedToolCall("read", { path: "b.md" }, theme, ctx("c2"));
+    const slot3 = renderGroupedToolCall("read", { path: "c.md" }, theme, ctx("c3"));
+
+    // After slot3 is created, slot1 and slot2 must render nothing — otherwise the
+    // group block appears multiple times in the chat.
+    expect(render(slot1)).toBe("");
+    expect(render(slot2)).toBe("");
+
+    const latest = render(slot3, 80);
+    expect(latest).toContain("Explored 3 targets");
+    expect(latest).toContain("Read a.md");
+    expect(latest).toContain("Read b.md");
+    expect(latest).toContain("Read c.md");
+  });
 });

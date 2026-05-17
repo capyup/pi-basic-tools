@@ -153,13 +153,10 @@ function renderSymbolOutlineResult(result: any, { expanded, isPartial }: { expan
   if (isPartial) return new Text(theme.fg("warning", "Outlining symbols..."), 0, 0);
 
   const details = result.details as { displayPath?: string; blockCount?: number; displayedBlockCount?: number; truncated?: boolean } | undefined;
-  const fullText = fallbackText(result);
-  if (!details) return new Text(fullText, 0, 0);
-  if (expanded) return new Text(fullText, 0, 0);
+  if (!details) return new Text(theme.fg("accent", "Outline file"), 0, 0);
 
-  const shown = details.truncated ? `, showing ${details.displayedBlockCount}` : "";
   const hint = safeKeyHint("app.tools.expand", "to expand");
-  return new Text(theme.fg("success", "symbol outline ") + theme.fg("accent", `${details.displayPath}: ${details.blockCount} blocks${shown}`) + theme.fg("muted", ` ${hint}`), 0, 0);
+  return new Text(theme.fg("accent", `Outline ${details.displayPath ?? "file"}`) + theme.fg("muted", `\n${hint}`), 0, 0);
 }
 
 function formatBlock(block: OutlineBlock): string {

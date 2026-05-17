@@ -1,6 +1,7 @@
 import { keyHint } from "@earendil-works/pi-coding-agent";
 import { Container, type Component, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { ROLE_GLYPHS, renderTreeRow, type VisualRole, type VisualStatus } from "./shared/visual.ts";
+import { retainToolExecutionPatch } from "./tool-execution-patch.ts";
 
 export type BasicToolRole = "inspect" | "search" | "write" | "run" | "network" | "ask" | "plan" | "default";
 
@@ -42,11 +43,13 @@ type BasicToolGroupingState = {
   currentGroup?: ToolGroup;
   nextGroupId: number;
   installed: boolean;
+  patchReleases: Array<() => Promise<void>>;
 };
 
 const BASIC_TOOL_NAMES = new Set([
   "read",
   "bash",
+  "edit",
   "grep",
   "find",
   "ls",
@@ -73,12 +76,17 @@ const MAX_GROUP_ITEMS = 12;
 
 function getState(): BasicToolGroupingState {
   const existing = (globalThis as Record<PropertyKey, unknown>)[STATE_KEY];
-  if (existing && typeof existing === "object") return existing as BasicToolGroupingState;
+  if (existing && typeof existing === "object") {
+    const state = existing as BasicToolGroupingState;
+    if (!Array.isArray(state.patchReleases)) state.patchReleases = [];
+    return state;
+  }
   const created: BasicToolGroupingState = {
     groups: new Map<number, ToolGroup>(),
     itemsByCallId: new Map<string, ToolItem>(),
     nextGroupId: 1,
     installed: false,
+    patchReleases: [],
   };
   (globalThis as Record<PropertyKey, unknown>)[STATE_KEY] = created;
   return created;
@@ -412,12 +420,17 @@ class BasicToolGroupComponent implements Component {
   private cachedLines?: string[];
 
   constructor(
+    private readonly item: ToolItem,
     private readonly group: ToolGroup,
     private readonly theme: any,
     private readonly expanded: boolean,
   ) {}
 
   render(width: number): string[] {
+    // Only the slot owned by the group's most recently added tool call should
+    // render the group. Earlier slots stay empty so the group block doesn't
+    // duplicate once every tool call gets its own ToolExecutionComponent.
+    if (this.item.hidden) return [];
     const cacheKey = `${width}:${this.group.version}:${this.expanded ? 1 : 0}`;
     if (this.cachedLines && this.cacheKey === cacheKey) return this.cachedLines;
     const lines = renderGroupLines(this.group, this.expanded, this.theme, width);
@@ -439,6 +452,8 @@ class BasicToolItemComponent implements Component {
   ) {}
 
   render(width: number): string[] {
+    if (this.item.hidden) return [];
+
     const headline = actionHeadline(this.item);
     const summary = displaySummary(this.item);
     const status = statusFor(this.item);
@@ -555,6 +570,30 @@ export function installBasicToolGrouping(pi: { on?: (event: string, handler: Fun
   pi.on("tool_result", (event: any) => {
     return compactExternalBasicToolResult(event);
   });
+
+  // Patch Pi's ToolExecutionComponent so wrappers around hidden grouped tools
+  // collapse to zero lines (otherwise the constructor's unconditional Spacer
+  // produces one stacked blank line per hidden tool — see
+  // extensions/tool-execution-patch.ts for the full explanation).
+  pi.on("session_start", async () => {
+    try {
+      const release = await retainToolExecutionPatch();
+      state.patchReleases.push(release);
+    } catch (error) {
+      console.warn(`pi-basic-tools basic-tool-grouping: tool-execution patch unavailable (${error instanceof Error ? error.message : String(error)})`);
+    }
+  });
+
+  pi.on("session_shutdown", async () => {
+    const release = state.patchReleases.pop();
+    if (!release) return;
+    try {
+      await release();
+    } catch (error) {
+      state.patchReleases.push(release);
+      console.warn(`pi-basic-tools basic-tool-grouping: tool-execution patch release failed (${error instanceof Error ? error.message : String(error)})`);
+    }
+  });
 }
 
 export function compactExternalBasicToolResult(event: any): { content: Array<{ type: "text"; text: string }>; details?: unknown } | undefined {
@@ -635,6 +674,7 @@ export function renderGroupedToolCall(toolName: string, args: Record<string, any
     recordStdinCall(sessionId, args?.chars);
     return emptyComponent();
   }
+  if (!isBasicTool(toolName)) return emptyComponent();
   if (!canGroupTool(context)) return emptyComponent();
   const toolCallId = String(context.toolCallId);
   const item = getOrCreateItem(toolName, toolCallId, summary);
@@ -645,12 +685,13 @@ export function renderGroupedToolCall(toolName: string, args: Record<string, any
     bumpGroup(groupFor(item));
   }
   const group = groupFor(item);
-  if (!item.hidden && group && group.items.length > 1) return new BasicToolGroupComponent(group, theme, !!context?.expanded);
+  if (group && group.items.length > 1) return new BasicToolGroupComponent(item, group, theme, !!context?.expanded);
   return new BasicToolItemComponent(item, theme);
 }
 
 export function renderGroupedToolResult(toolName: string, result: any, options: { expanded?: boolean; isPartial?: boolean }, theme: any, context: any, summary?: BasicToolSummary): Component {
   if (toolName === "write_stdin") return emptyComponent();
+  if (!isBasicTool(toolName)) return emptyComponent();
   if (toolName === "exec_command") {
     const sessionId = result?.details?.session_id;
     if (typeof sessionId === "string" && context?.toolCallId) {

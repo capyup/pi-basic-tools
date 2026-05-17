@@ -92,13 +92,10 @@ function renderSourcegraphResult(result: any, { expanded, isPartial }: { expande
 	if (isPartial) return new Text(theme.fg("warning", "Searching Sourcegraph..."), 0, 0);
 
 	const details = result.details as SourcegraphDetails | undefined;
-	const fullText = fallbackText(result);
-	if (!details) return new Text(fullText, 0, 0);
-	if (expanded) return new Text(fullText, 0, 0);
+	if (!details) return new Text(theme.fg("accent", "Search Sourcegraph"), 0, 0);
 
-	const limit = details.limitHit ? ", limit hit" : "";
 	const hint = safeKeyHint("app.tools.expand", "to expand");
-	return new Text(theme.fg("success", "sourcegraph ") + theme.fg("accent", `${details.matchCount} matches / ${details.resultCount} results`) + theme.fg("dim", `${limit} ${hint}`), 0, 0);
+	return new Text(theme.fg("accent", "Search Sourcegraph") + theme.fg("dim", `\n${hint}`), 0, 0);
 }
 
 function formatResults(searchResults: SearchResults, contextWindow: number): string {

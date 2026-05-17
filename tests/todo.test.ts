@@ -7,7 +7,7 @@ import todoExtension from "../extensions/todo/index.ts";
 import { __resetState, applyTaskMutation, getState, replaceState } from "../extensions/todo/state.ts";
 import { replayFromBranch } from "../extensions/todo/replay.ts";
 import { renderTodoCall, renderTodoResult } from "../extensions/todo/render.ts";
-import { resetBasicToolGroupingForTests } from "../extensions/basic-tool-grouping.ts";
+import { renderGroupedToolCall, resetBasicToolGroupingForTests } from "../extensions/basic-tool-grouping.ts";
 import type { TaskMutationParams } from "../extensions/todo/types.ts";
 
 const repoRoot = new URL("..", import.meta.url).pathname;
@@ -187,6 +187,23 @@ describe("todo render — per-call single-line + grouping", () => {
     expect(grouped).not.toContain("\u25cb pending");
     expect(grouped).not.toContain("\u251c\u2500");
     expect(grouped).not.toContain("\u2514\u2500");
+  });
+
+  test("a todo call absorbed into a mixed tool group stops rendering as a standalone row", () => {
+    replaceState(applyTaskMutation(getState(), "create", { subject: "Fix non-fast backup path" }).state);
+    const ctx1 = newCtx("t1");
+    const ctx2 = newCtx("b1");
+    const args: TaskMutationParams & { action: "update" } = { action: "update", id: 1, status: "in_progress" };
+
+    const first = renderTodoCall(args, plainTheme, ctx1, getState());
+    expect(renderComponent(first)).toContain("Started Fix non-fast backup path");
+
+    const grouped = renderComponent(renderGroupedToolCall("bash", { command: "ssh ubuntu@example 'set -e'" }, plainTheme, ctx2));
+    expect(grouped).toContain("Used 2 tools");
+    expect(grouped).toContain("Started Fix non-fast backup path");
+    expect(grouped).toContain("Ran ssh ubuntu@example 'set -e'");
+
+    expect(renderComponent(first)).toBe("");
   });
 
   test("standalone render (no grouping context) emits the verb inline", () => {

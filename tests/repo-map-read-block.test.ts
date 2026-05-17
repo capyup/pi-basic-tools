@@ -407,10 +407,11 @@ describe("enable-builtin-search", () => {
       },
     });
 
+    // The earlier grep slot is superseded once find joins the group, so it must
+    // render empty — only the latest slot owns the group block to avoid
+    // duplicating it once every tool call has its own ToolExecutionComponent.
     const supersededHead = renderComponent(grep.renderCall({ pattern: "renderResult", path: "extensions" }, plainTheme(), headContext));
-    expect(supersededHead).toContain("Search");
-    expect(supersededHead).toContain("renderResult");
-    expect(supersededHead).not.toContain("TOOLS");
+    expect(supersededHead).toBe("");
 
     const grouped = renderComponent(find.renderCall({ pattern: "*.ts", path: "extensions" }, plainTheme(), findContext));
     expect(grouped).toContain("Explored 2 targets");
@@ -566,9 +567,10 @@ describe("enable-builtin-search", () => {
     expect(invalidated).toBe(true);
     expect(latest).toContain("Find");
     expect(latest).toContain("beta");
+    // After the invalidate fires, the superseded slot re-renders empty so the
+    // newly-added find slot is the only one carrying the group block.
     const superseded = renderComponent(grep.renderCall({ pattern: "alpha" }, plainTheme(), firstContext));
-    expect(superseded).toContain("Search");
-    expect(superseded).toContain("alpha");
+    expect(superseded).toBe("");
   });
 
   test("updates the Codex-style call row after the result arrives", async () => {

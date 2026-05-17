@@ -29,6 +29,14 @@ DEFAULT_PROMPT = """Use exactly these tools in order, with no other tools betwee
 3. grep for pattern BasicToolGroupComponent in extensions/basic-tool-grouping.ts
 Then answer exactly: DONE_BASIC_TOOLS_CAPTURE
 """
+LEAK_CANARY_PROMPT = """Use exactly these tools in order, with no other tools between them:
+1. repo_map on the current project with depth=1 and maxFiles=20
+2. read README.md
+3. bash command: node -e "console.log(['RAW','LEAK','SENTINEL'].join('_'))"
+Then answer exactly: DONE_BASIC_TOOLS_CAPTURE
+"""
+LEAK_CANARY_EXPECT = ["Explored", "Map", "Read", "Ran"]
+LEAK_CANARY_FORBID = ["# repo_map:", "Root:", "Standalone basic tools", "RAW_LEAK_SENTINEL"]
 
 CSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 OSC_RE = re.compile(r"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)")
@@ -54,6 +62,14 @@ def strip_ansi(text: str) -> str:
         collapsed.append(line)
         previous_blank = blank
     return "\n".join(collapsed).strip() + "\n"
+
+
+def strip_thinking_summary_lines(text: str) -> str:
+    return "\n".join(
+        line
+        for line in text.splitlines()
+        if not line.lstrip().startswith(("┆", "├─", "└─"))
+    )
 
 
 def set_winsize(fd: int, rows: int, cols: int) -> None:
@@ -183,21 +199,32 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="use the user's normal pi extension/tool settings instead of the isolated local extension setup",
     )
+    parser.add_argument(
+        "--basic-leak-canary",
+        action="store_true",
+        help="run a repo_map/read/bash prompt and forbid raw result leaks in the visible capture",
+    )
     parser.add_argument("--expect", action="append", default=[], help="plain-text substring that must appear; repeatable")
     parser.add_argument(
         "--expect-tools-block",
         action="append",
         default=[],
-        help="substring that must appear with the other --expect-tools-block values in one rendered TOOLS block",
+        help="substring that must appear with the other --expect-tools-block values in one rendered grouped tool block",
     )
-    parser.add_argument("--expect-tools-status", choices=["running", "done", "error"], default="done")
+    parser.add_argument("--expect-tools-status", choices=["any", "running", "done", "error"], default="any")
     parser.add_argument("--forbid", action="append", default=[], help="plain-text substring that must not appear; repeatable")
+    parser.add_argument("--forbid-ignore-thinking", action="store_true", help="apply --forbid after dropping rendered thinking-summary lines")
     parser.add_argument("--", dest="command", nargs=argparse.REMAINDER, help="custom command to run instead of the default pi command")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    if args.basic_leak_canary:
+        args.prompt = LEAK_CANARY_PROMPT
+        args.expect.extend(LEAK_CANARY_EXPECT)
+        args.forbid.extend(LEAK_CANARY_FORBID)
+        args.forbid_ignore_thinking = True
     args.cwd = args.cwd.resolve()
     args.out_dir.mkdir(parents=True, exist_ok=True)
     command = args.command if args.command else build_default_command(args)
@@ -213,7 +240,7 @@ def main() -> int:
     raw_path.write_bytes(raw)
     plain_path.write_text(plain, encoding="utf-8")
 
-    expectations = args.expect or ["TOOLS", "symbol_outline", "read_block", "grep", args.sentinel]
+    expectations = args.expect or ["Explored 3 targets", "Outline", "Read", "Search", args.sentinel]
     failures: list[str] = []
     matched_tools_block: str | None = None
     if args.sentinel and not sentinel_seen:
@@ -225,13 +252,19 @@ def main() -> int:
             failures.append(f"missing expected text: {expected}")
     if args.expect_tools_block:
         lines = plain.splitlines()
-        prefix = f"TOOLS {args.expect_tools_status}"
-        tool_blocks = ["\n".join(lines[index : index + 16]) for index, line in enumerate(lines) if line.startswith(prefix)]
+        if args.expect_tools_status == "any":
+            prefixes = ("Ran ", "Edited ", "Explored ", "Fetched ", "Used ")
+            tool_blocks = ["\n".join(lines[index : index + 16]) for index, line in enumerate(lines) if line.startswith(prefixes)]
+            prefix = "grouped tool"
+        else:
+            prefix = "grouped tool"
+            tool_blocks = ["\n".join(lines[index : index + 16]) for index, line in enumerate(lines) if line.startswith(("Ran ", "Edited ", "Explored ", "Fetched ", "Used "))]
         matched_tools_block = next((block for block in tool_blocks if all(expected in block for expected in args.expect_tools_block)), None)
         if matched_tools_block is None:
             failures.append(f"no single {prefix} block contains: " + ", ".join(args.expect_tools_block))
+    forbidden_scope = strip_thinking_summary_lines(plain) if args.forbid_ignore_thinking else plain
     for forbidden in args.forbid:
-        if forbidden and forbidden in plain:
+        if forbidden and forbidden in forbidden_scope:
             failures.append(f"forbidden text present: {forbidden}")
 
     print(f"capture_dir: {args.out_dir}")
@@ -241,7 +274,7 @@ def main() -> int:
     print("--- plain tail ---")
     print("\n".join(plain.splitlines()[-80:]))
     if matched_tools_block:
-        print("--- matched TOOLS block ---")
+        print("--- matched grouped tool block ---")
         print(matched_tools_block)
 
     if failures:

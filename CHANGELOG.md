@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0 (2026-05-17)
+
+- **Fix stacked blank lines before grouped tool blocks**: A new `extensions/tool-execution-patch.ts` monkey-patches `ToolExecutionComponent.prototype.render` in `@earendil-works/pi-coding-agent`. Pi's wrapper unconditionally prepends `new Spacer(1)` to every tool execution, so when `basic-tool-grouping` marks earlier tools in a group as hidden, their inner renderer returns `[]` but the outer wrapper still emits one blank line — producing N-1 stacked blanks before an N-tool group block. The patch detects the visually-empty case (all rendered lines are whitespace or ANSI-only after CSI/SGR stripping) and collapses the component to `[]`. Tools with real content render unchanged. The patch is installed via the same ref-counted `session_start` / `session_shutdown` pattern used by thinking-steps' internal patch, and is unit-tested in `tests/tool-execution-patch.test.ts`.
+- **Visual hierarchy carried over from 0.7.2**: The three-tier color rule (`warning`/`error` live → `muted` structure & detail), shape-based status markers (`◐` running, `!` error, `•` done), and todo discipline rules in the system prompt are bundled into this release.
+
 ## 0.7.2 (2026-05-16)
 
 - **Unified visual hierarchy across in-message group renderers**: `thinking-steps`, `basic-tool-grouping`, and the todo standalone fallback now share one three-tier color rule. Tier 1 (live) is `warning` (running) or `error`; Tier 2 (structure) and Tier 3 (detail) settle to `muted`. A finished page is almost entirely muted, with `warning` ink only on the running group header and the running item marker. Concrete consequences: the `Thinking N steps` header now matches the `Ran N commands` / `Used N tools` headers in `muted`; role glyphs in thinking-steps lose their per-role color (shape carries the meaning); tool-item headline text is `muted` in every non-error state; active thinking-step text drops `accent` but keeps `bold`.

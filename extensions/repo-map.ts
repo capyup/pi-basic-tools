@@ -123,17 +123,11 @@ function renderRepoMapResult(result: any, { expanded, isPartial }: { expanded?: 
   if (isPartial) return new Text(theme.fg("warning", "Mapping repository..."), 0, 0);
 
   const details = result.details as { root?: string; fileCount?: number; git?: GitInfo } | undefined;
-  const fullText = fallbackText(result);
-  if (!details) return new Text(fullText, 0, 0);
-  if (expanded) return new Text(fullText, 0, 0);
+  if (!details) return new Text(theme.fg("accent", "Map project"), 0, 0);
 
-  const name = basename(details.root || "repo");
-  const branch = details.git?.branch ? `branch ${details.git.branch}` : "no branch";
-  const dirtyCount = details.git?.status?.length ?? 0;
-  const fileCount = details.fileCount ?? 0;
+  const name = basename(details.root || "project");
   const hint = safeKeyHint("app.tools.expand", "to expand");
-  const summary = `${name} · ${fileCount} files · ${branch}${dirtyCount > 0 ? ` · ${dirtyCount} dirty` : ""}`;
-  return new Text(theme.fg("success", "repo map ") + theme.fg("accent", summary) + theme.fg("muted", ` ${hint}`), 0, 0);
+  return new Text(theme.fg("accent", `Map ${name}`) + theme.fg("muted", `\n${hint}`), 0, 0);
 }
 
 function runGit(cwd: string, args: string[]): string | undefined {
