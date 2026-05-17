@@ -49,7 +49,8 @@ type BasicToolGroupingState = {
 const BASIC_TOOL_NAMES = new Set([
   "read",
   "bash",
-  "edit",
+  // "edit" intentionally omitted — it has its own native diff UI via
+  // renderShell:"self" + renderCall/renderResult; grouping would hide the diff.
   "grep",
   "find",
   "ls",

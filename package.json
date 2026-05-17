@@ -1,6 +1,6 @@
 {
   "name": "@capyup/pi-basic-tools",
-  "version": "0.8.6",
+  "version": "0.8.7",
   "description": "Standalone core productivity tools for pi: repo_map, read_block, symbol_outline, apply_patch, exec_command, write_stdin, grouped basic-tool UI, work_checkpoint, ask_user, ask_question, ask_questionnaire, fetch, Sourcegraph, and built-in search activation. (todo split out into @tintinweb/pi-tasks.)",
   "repository": {
     "type": "git",
