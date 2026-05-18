@@ -48,7 +48,7 @@ export default function recapExtension(pi: ExtensionAPI): void {
     name: "recap",
     label: "recap",
     description:
-      "Send a short prose message (8-12 words) to the user. Call this as the first tool in any batch of related tool calls (forward-looking preamble), or between work segments in a longer task (recap + next step). The `text` argument is the message the user reads.",
+      "The user needs to know What is going on. Don't be too autistic! Send a short prose message (8-12 words) to the user. Call this as the first tool in any batch of related tool calls (forward-looking preamble), or between work segments in a longer task (recap + next step). The `text` argument is the message the user reads.",
     promptSnippet:
       "Call `recap({ text: '...' })` immediately before each batch of related tool calls (forward-looking preamble) and between work segments in longer tasks (recap + next step). One sentence, 8-12 words. Place `recap` first in the parallel batch.",
     promptGuidelines: [
