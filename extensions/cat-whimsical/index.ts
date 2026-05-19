@@ -18,38 +18,12 @@
  * notice.
  */
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { Loader } from "@earendil-works/pi-tui";
 
-import {
-  getAgentDir,
-  getSettingsListTheme,
-  type ExtensionAPI,
-  type ExtensionCommandContext,
-  type ExtensionContext,
-} from "@earendil-works/pi-coding-agent";
-import { Container, Loader, type SettingItem, SettingsList, Spacer, Text } from "@earendil-works/pi-tui";
+import { getCapyToolsSettings, restoreCapyToolsSettings, type Language } from "../capy-tools-config.ts";
 
 const WORKING_MESSAGE_WIDGET_KEY = "capy-tools-working-message";
-const GLOBAL_CONFIG_PATH = join(getAgentDir(), "capy-tools.json");
-const LEGACY_CAT_CONFIG_PATH = join(getAgentDir(), "cat-whimsical.json");
-
-const LANGUAGE_LABELS = {
-  en: "English",
-  zh: "Chinese",
-  ja: "Japanese",
-  ko: "Korean",
-} as const;
-
-type Language = keyof typeof LANGUAGE_LABELS;
-
-type WorkingMessageSettings = {
-  language: Language;
-};
-
-type CapyToolsSettings = {
-  workingMessage: WorkingMessageSettings;
-};
 
 type MessageSet = {
   timePhrases: string[];
@@ -57,12 +31,6 @@ type MessageSet = {
   thoughts: string[];
   rareMoments: string[];
   separator: string;
-};
-
-const DEFAULT_SETTINGS: CapyToolsSettings = {
-  workingMessage: {
-    language: "en",
-  },
 };
 
 const MESSAGE_SETS: Record<Language, MessageSet> = {
@@ -266,180 +234,15 @@ function finish(message: string): string {
   return `${message.trim().replace(/[.。!！?？]+$/u, "")}...`;
 }
 
-function loadLanguageLabel(language: Language): string {
-  return LANGUAGE_LABELS[language];
-}
-
-function parseLanguage(value: string): Language | undefined {
-  const normalized = value.trim().toLowerCase();
-  if (normalized in LANGUAGE_LABELS) return normalized as Language;
-
-  const label = (Object.entries(LANGUAGE_LABELS) as Array<[Language, string]>).find(
-    ([, candidate]) => candidate.toLowerCase() === normalized,
-  );
-  return label?.[0];
-}
-
-function normalizeWorkingMessageSettings(value: unknown): WorkingMessageSettings {
-  if (!value || typeof value !== "object") return { ...DEFAULT_SETTINGS.workingMessage };
-
-  const language = typeof (value as { language?: unknown }).language === "string"
-    ? parseLanguage((value as { language: string }).language)
-    : undefined;
-
-  return {
-    language: language ?? DEFAULT_SETTINGS.workingMessage.language,
-  };
-}
-
-function normalizeSettings(value: unknown): CapyToolsSettings {
-  if (!value || typeof value !== "object") return structuredClone(DEFAULT_SETTINGS);
-
-  const rawWorkingMessage = (value as { workingMessage?: unknown }).workingMessage;
-  // Legacy cat-whimsical config stored language at the top level.
-  const workingMessage = rawWorkingMessage === undefined
-    ? normalizeWorkingMessageSettings(value)
-    : normalizeWorkingMessageSettings(rawWorkingMessage);
-
-  return { workingMessage };
-}
-
-async function loadSettings(): Promise<CapyToolsSettings> {
-  try {
-    const raw = await readFile(GLOBAL_CONFIG_PATH, "utf8");
-    return normalizeSettings(JSON.parse(raw));
-  } catch {
-    try {
-      const legacyRaw = await readFile(LEGACY_CAT_CONFIG_PATH, "utf8");
-      const migrated = normalizeSettings(JSON.parse(legacyRaw));
-      await writeSettings(migrated);
-      return migrated;
-    } catch {
-      return structuredClone(DEFAULT_SETTINGS);
-    }
-  }
-}
-
-async function writeSettings(settings: CapyToolsSettings): Promise<void> {
-  await mkdir(dirname(GLOBAL_CONFIG_PATH), { recursive: true });
-  await writeFile(GLOBAL_CONFIG_PATH, `${JSON.stringify(settings, null, 2)}\n`, "utf8");
-}
-
-function pickRandom(language: Language): string {
-  const set = MESSAGE_SETS[language];
-
-  if (Math.random() < 0.12) {
-    return finish(pick(set.rareMoments));
-  }
-
-  const includeTime = Math.random() < 0.7;
-  const includeThought = Math.random() < 0.75;
-  const parts: string[] = [];
-
-  if (includeTime) parts.push(pick(set.timePhrases));
-  parts.push(pick(set.actions));
-  if (includeThought) parts.push(pick(set.thoughts));
-
-  return finish(parts.join(set.separator));
-}
-
-async function openSettingsDialog(
-  ctx: ExtensionCommandContext,
-  settings: CapyToolsSettings,
-  onLanguageChange: (language: Language) => Promise<void>,
-): Promise<void> {
-  if (!ctx.hasUI) return;
-
-  const items: SettingItem[] = [
-    {
-      id: "language",
-      label: "Language",
-      description: "Select the language used for Capy Tools working messages.",
-      currentValue: loadLanguageLabel(settings.workingMessage.language),
-      values: Object.values(LANGUAGE_LABELS),
-    },
-  ];
-
-  await ctx.ui.custom<void>((tui, theme, _keybindings, done) => {
-    const container = new Container();
-    container.addChild(new Text(theme.fg("accent", theme.bold("Capy Tools settings")), 1, 0));
-    container.addChild(new Spacer(1));
-
-    const settingsList = new SettingsList(
-      items,
-      4,
-      getSettingsListTheme(),
-      async (id, newValue) => {
-        if (id !== "language") return;
-        const language = parseLanguage(newValue);
-        if (!language) return;
-        await onLanguageChange(language);
-        const item = items.find((candidate) => candidate.id === id);
-        if (item) item.currentValue = loadLanguageLabel(language);
-      },
-      () => done(undefined),
-      { enableSearch: false },
-    );
-
-    container.addChild(settingsList);
-    container.addChild(new Spacer(1));
-    container.addChild(new Text(theme.fg("dim", "Enter or Space changes the language. The setting is saved immediately."), 1, 0));
-
-    return {
-      handleInput(data: string): void {
-        settingsList.handleInput?.(data);
-        tui.requestRender();
-      },
-      invalidate(): void {
-        container.invalidate();
-      },
-      render(width: number): string[] {
-        return container.render(width);
-      },
-    };
-  });
-}
-
 export default function workingMessageExtension(pi: ExtensionAPI): void {
-  let settings: CapyToolsSettings = structuredClone(DEFAULT_SETTINGS);
-
-  const applySettings = async (ctx: ExtensionContext, nextSettings: CapyToolsSettings): Promise<void> => {
-    settings = nextSettings;
-    await writeSettings(settings);
-    if (ctx.hasUI) {
-      ctx.ui.notify(`Capy Tools language set to ${loadLanguageLabel(settings.workingMessage.language)}.`, "info");
-    }
-  };
-
-  pi.on("session_start", async (_event, _ctx) => {
-    settings = await loadSettings();
-  });
-
-  pi.registerCommand("capy-tools-settings", {
-    description: "Open the Capy Tools settings panel.",
-    handler: async (args, ctx) => {
-      const trimmed = args.trim();
-
-      if (trimmed.length > 0) {
-        const language = parseLanguage(trimmed);
-        if (!language) {
-          ctx.ui.notify("Use English, Chinese, Japanese, Korean, or the short codes en, zh, ja, ko.", "warning");
-          return;
-        }
-
-        await applySettings(ctx, { ...settings, workingMessage: { language } });
-        return;
-      }
-
-      await openSettingsDialog(ctx, settings, async (language) => {
-        await applySettings(ctx, { ...settings, workingMessage: { language } });
-      });
-    },
+  pi.on("session_start", async () => {
+    await restoreCapyToolsSettings();
   });
 
   pi.on("turn_start", async (_event, ctx) => {
     if (!ctx.hasUI) return;
 
+    const settings = getCapyToolsSettings();
     const message = pickRandom(settings.workingMessage.language);
     // Pi's built-in working loader lives in the status container, which is
     // above extension widgets. Render our own loader widget instead so it can
